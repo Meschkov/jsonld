@@ -140,8 +140,56 @@ func MarshalExpanded(v any, opts ...Option) ([]byte, error) {
 	return compactedDocJson, nil
 }
 
-func MarshalCompacted(v any, opts ...Option) {
-	panic("TODO")
+func MarshalCompacted(v any, opts ...Option) ([]byte, error) {
+	// TODO refactor all Marshal methods
+	// 1. Convert struct to map[string]interface
+	jsonldMap := map[string]interface{}{}
+	val := reflect.ValueOf(v)
+
+	if val.Kind() != reflect.Struct {
+		return nil, errors.New("type unsupported by MarshalCompacted method")
+	}
+
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	for i := 0; i < val.NumField(); i++ {
+		var fieldData interface{}
+		var err error
+
+		if !val.Field(i).CanInterface() {
+			// Skip unexported fields
+			continue
+		}
+
+		fieldData, err = extractFieldData(val.Field(i), MarshalCompacted)
+		if err != nil {
+			return nil, err
+		}
+
+		fieldTag := val.Type().Field(i).Tag.Get("jsonld")
+
+		if fieldTag == "" || fieldTag == "-" {
+			continue
+		}
+
+		// Fixed JSON LD Type definition
+		if fieldTag == "@type" && val.Type().Field(i).Tag.Get("default") != "" {
+			jsonldMap[fieldTag] = val.Type().Field(i).Tag.Get("default")
+			continue
+		}
+
+		jsonldMap[fieldTag] = fieldData
+	}
+
+	// 2. Convert map[string]interface to []byte
+	compactedDocJson, err := json.Marshal(jsonldMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return compactedDocJson, nil
 }
 
 func MarshalContext(v any, c map[string]interface{}, opts ...Option) {
