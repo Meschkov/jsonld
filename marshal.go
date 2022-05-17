@@ -192,6 +192,6 @@ func MarshalCompacted(v any, opts ...Option) ([]byte, error) {
 	return compactedDocJson, nil
 }
 
-func MarshalContext(v any, c map[string]interface{}, opts ...Option) {
-	panic("TODO")
+func MarshalContext(v any, c map[string]interface{}, opts ...Option) ([]byte, error) {
+	return nil, errors.New("method not implemented yet")
 }
